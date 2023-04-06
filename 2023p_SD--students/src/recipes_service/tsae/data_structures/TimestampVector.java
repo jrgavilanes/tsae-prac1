@@ -23,10 +23,11 @@ package recipes_service.tsae.data_structures;
 
 
 import java.io.Serializable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import edu.uoc.dpcs.lsim.logger.LoggerManager.Level;
@@ -54,9 +55,10 @@ public class TimestampVector implements Serializable{
 	public TimestampVector (List<String> participants){
 		// create and empty TimestampVector
 		for (Iterator<String> it = participants.iterator(); it.hasNext(); ){
-			String id = it.next();
-			// when sequence number of timestamp < 0 it means that the timestamp is the null timestamp
-			timestampVector.put(id, new Timestamp(id, Timestamp.NULL_TIMESTAMP_SEQ_NUMBER));
+			String id = it.next();		
+			// when sequence number of timestamp < 0 it means that the timestamp is the null timestamp			
+			timestampVector.put(id, new Timestamp(id, Timestamp.NULL_TIMESTAMP_SEQ_NUMBER));			
+			
 		}
 	}
 
@@ -66,8 +68,7 @@ public class TimestampVector implements Serializable{
 	 */
 	public void updateTimestamp(Timestamp timestamp){
 		LSimLogger.log(Level.TRACE, "Updating the TimestampVectorInserting with the timestamp: "+timestamp);
-
-		// ...
+		timestampVector.put(timestamp.getHostid(), timestamp);
 	}
 	
 	/**
@@ -75,6 +76,14 @@ public class TimestampVector implements Serializable{
 	 * @param tsVector (a timestamp vector)
 	 */
 	public void updateMax(TimestampVector tsVector){
+		for (Entry<String, Timestamp> entry : tsVector.timestampVector.entrySet()) {
+	        String hostId = entry.getKey();
+	        Timestamp newTimestamp = entry.getValue();
+	        Timestamp currentTimestamp = timestampVector.get(hostId);
+	        if (currentTimestamp == null || newTimestamp.compare(currentTimestamp) > 0) {
+	            timestampVector.put(hostId, newTimestamp);
+	        }
+	    }
 	}
 	
 	/**
@@ -84,9 +93,8 @@ public class TimestampVector implements Serializable{
 	 * received.
 	 */
 	public Timestamp getLast(String node){
-		
 		// return generated automatically. Remove it when implementing your solution 
-		return null;
+		return timestampVector.get(node);
 	}
 	
 	/**
@@ -96,24 +104,41 @@ public class TimestampVector implements Serializable{
 	 *  @param tsVector (timestamp vector)
 	 */
 	public void mergeMin(TimestampVector tsVector){
+		for (String node : timestampVector.keySet()) {
+	        Timestamp ts1 = timestampVector.get(node);
+	        Timestamp ts2 = tsVector.getLast(node);
+
+	        if (ts2 == null) {
+	            continue;
+	        }
+
+	        if (ts1.compare(ts2) > 0) {
+	            timestampVector.put(node, ts2);
+	        }
+	    }
 	}
+	
 	
 	/**
 	 * clone
 	 */
 	public TimestampVector clone(){
-		
-		// return generated automatically. Remove it when implementing your solution 
-		return null;
+		//return generated automatically. Remove it when implementing your solution
+		TimestampVector newTimestampVector = new TimestampVector(new ArrayList<>(timestampVector.keySet()));
+
+	    for (String nodeId : timestampVector.keySet()) {
+	        Timestamp ts = timestampVector.get(nodeId);
+	        newTimestampVector.timestampVector.put(nodeId, new Timestamp(ts.getHostid(), ts.compare(null)));
+	    }
+
+	    return newTimestampVector;
 	}
 	
 	/**
 	 * equals
 	 */
 	public boolean equals(Object obj){
-		
-		// return generated automatically. Remove it when implementing your solution 
-		return false;
+		return this.equals(obj);
 	}
 
 	/**

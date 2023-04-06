@@ -21,6 +21,8 @@
 package recipes_service.tsae.data_structures;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -72,10 +74,13 @@ public class Log implements Serializable{
 	 * @return true if op is inserted, false otherwise.
 	 */
 	public boolean add(Operation op){
-		// ....
-		
-		// return generated automatically. Remove it when implementing your solution 
-		return false;
+		String user = op.getType().name();
+        List<Operation> userLog = log.get(user);
+        if (userLog.isEmpty() || userLog.get(userLog.size() - 1).getTimestamp().compare(op.getTimestamp()) < 0) {
+            userLog.add(op);
+            return true;
+        }
+        return false;
 	}
 	
 	/**
@@ -87,9 +92,24 @@ public class Log implements Serializable{
 	 * @return list of operations
 	 */
 	public List<Operation> listNewer(TimestampVector sum){
+		
+		// me quedo aqui janrax
 
-		// return generated automatically. Remove it when implementing your solution 
-		return null;
+		List<Operation> result = new ArrayList<Operation>();
+	    String myId = sum.toString();
+	    List<Operation> myLog = log.get(myId);
+	    Timestamp myLastTimestamp = myLog.get(myLog.size()-1).getTimestamp();
+	    for (Operation op : myLog) {
+	        Timestamp opTimestamp = op.getTimestamp();
+	        if (opTimestamp.before(sum.getLast(op.getTimestamp()))) {
+	            continue;
+	        }
+	        if (opTimestamp.equals(myLastTimestamp)) {
+	            break;
+	        }
+	        result.add(op);
+	    }
+	    return result;
 	}
 	
 	/**
