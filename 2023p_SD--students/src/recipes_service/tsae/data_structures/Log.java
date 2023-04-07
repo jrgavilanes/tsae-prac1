@@ -1,28 +1,29 @@
 /*
-* Copyright (c) Joan-Manuel Marques 2013. All rights reserved.
-* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-*
-* This file is part of the practical assignment of Distributed Systems course.
-*
-* This code is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* This code is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this code.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright (c) Joan-Manuel Marques 2013. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This file is part of the practical assignment of Distributed Systems course.
+ *
+ * This code is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this code.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package recipes_service.tsae.data_structures;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -43,9 +44,9 @@ import lsim.library.api.LSimLogger;
  */
 public class Log implements Serializable{
 	// Only for the zip file with the correct solution of phase1.Needed for the logging system for the phase1. sgeag_2018p 
-//	private transient LSimCoordinator lsim = LSimFactory.getCoordinatorInstance();
+	//	private transient LSimCoordinator lsim = LSimFactory.getCoordinatorInstance();
 	// Needed for the logging system sgeag@2017
-//	private transient LSimWorker lsim = LSimFactory.getWorkerInstance();
+	//	private transient LSimWorker lsim = LSimFactory.getWorkerInstance();
 
 	private static final long serialVersionUID = -4864990265268259700L;
 	/**
@@ -75,14 +76,14 @@ public class Log implements Serializable{
 	 */
 	public boolean add(Operation op){
 		String user = op.getType().name();
-        List<Operation> userLog = log.get(user);
-        if (userLog.isEmpty() || userLog.get(userLog.size() - 1).getTimestamp().compare(op.getTimestamp()) < 0) {
-            userLog.add(op);
-            return true;
-        }
-        return false;
+		List<Operation> userLog = log.get(user);
+		if (userLog.isEmpty() || userLog.get(userLog.size() - 1).getTimestamp().compare(op.getTimestamp()) < 0) {
+			userLog.add(op);
+			return true;
+		}
+		return false;
 	}
-	
+
 	/**
 	 * Checks the received summary (sum) and determines the operations
 	 * contained in the log that have not been seen by
@@ -92,26 +93,29 @@ public class Log implements Serializable{
 	 * @return list of operations
 	 */
 	public List<Operation> listNewer(TimestampVector sum){
-		
-		// me quedo aqui janrax
+		List<Operation> newerOperations = new ArrayList<>();
+		for (String node : log.keySet()) {
+			Timestamp nodeTimestamp = sum.getLast(node);
+			if (nodeTimestamp == null) {
+				continue;
+			}
+			List<Operation> nodeLog = log.get(node);
+			for (Operation operation : nodeLog) {
+				if (operation.getTimestamp().compare(nodeTimestamp) > 0) {
+					newerOperations.add(operation);
+				}
+			}
+		}
+		Collections.sort(newerOperations, new Comparator<Operation>() {
+			@Override
+			public int compare(Operation o1, Operation o2) {
+				return (int) o1.getTimestamp().compare(o2.getTimestamp());
+			}
+		});
+		return newerOperations;	
 
-		List<Operation> result = new ArrayList<Operation>();
-	    String myId = sum.toString();
-	    List<Operation> myLog = log.get(myId);
-	    Timestamp myLastTimestamp = myLog.get(myLog.size()-1).getTimestamp();
-	    for (Operation op : myLog) {
-	        Timestamp opTimestamp = op.getTimestamp();
-	        if (opTimestamp.before(sum.getLast(op.getTimestamp()))) {
-	            continue;
-	        }
-	        if (opTimestamp.equals(myLastTimestamp)) {
-	            break;
-	        }
-	        result.add(op);
-	    }
-	    return result;
 	}
-	
+
 	/**
 	 * Removes from the log the operations that have
 	 * been acknowledged by all the members
@@ -127,8 +131,9 @@ public class Log implements Serializable{
 	 */
 	@Override
 	public boolean equals(Object obj) {
-		
-		// return generated automatically. Remove it when implementing your solution 
+		if (obj == this) {
+			return true;
+		}
 		return false;
 	}
 
@@ -139,13 +144,13 @@ public class Log implements Serializable{
 	public synchronized String toString() {
 		String name="";
 		for(Enumeration<List<Operation>> en=log.elements();
-		en.hasMoreElements(); ){
-		List<Operation> sublog=en.nextElement();
-		for(ListIterator<Operation> en2=sublog.listIterator(); en2.hasNext();){
-			name+=en2.next().toString()+"\n";
+				en.hasMoreElements(); ){
+			List<Operation> sublog=en.nextElement();
+			for(ListIterator<Operation> en2=sublog.listIterator(); en2.hasNext();){
+				name+=en2.next().toString()+"\n";
+			}
 		}
-	}
-		
+
 		return name;
 	}
 }
